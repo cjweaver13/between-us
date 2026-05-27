@@ -34,6 +34,10 @@ function bindEvents() {
     stopPolling();
     localStorage.removeItem('bu_user');
     currentUser = null;
+    document.getElementById('entry-text').value = '';
+    document.getElementById('write-analysis').classList.add('hidden');
+    document.getElementById('write-feedback').classList.add('hidden');
+    document.querySelectorAll('#mood-chips .chip.selected').forEach(c => c.classList.remove('selected'));
     document.getElementById('app').classList.add('hidden');
     document.getElementById('user-select').classList.remove('hidden');
   });
