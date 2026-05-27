@@ -81,12 +81,29 @@ app.post('/api/data', (req, res) => {
   res.json({ success: true });
 });
 
+const SESSION_NOTE_PROMPT = `You are wrapping up a couples counseling session between Collin and Megan. Generate a compact handoff note — not a summary for them to read together, but a clinical briefing so the next session can pick up without re-reading everything.
+
+Format exactly as:
+Date: [today's date]
+Worked through: [2-3 sentences, specific topics covered]
+Breakthroughs: [1-2 sentences, or "none clear yet"]
+Still unresolved: [1-2 sentences]
+For Collin before next session: [1 concrete reflection or action]
+For Megan before next session: [1 concrete reflection or action]
+Start next session with: [one specific question or topic to open with]
+
+Be concrete and specific. Under 200 words. This is a clinical handoff, not encouragement.`;
+
 app.post('/api/analyze', async (req, res) => {
-  const { entry, user, moods, context, summaryMode, mode } = req.body;
-  const systemPrompt = mode === 'live' ? LIVE_PROMPT : CHECKIN_PROMPT;
+  const { entry, user, moods, context, summaryMode, mode, sessionNoteMode } = req.body;
+
+  let systemPrompt = mode === 'live' ? LIVE_PROMPT : CHECKIN_PROMPT;
+  if (sessionNoteMode) systemPrompt = SESSION_NOTE_PROMPT;
 
   let userMessage;
-  if (summaryMode) {
+  if (sessionNoteMode) {
+    userMessage = `Generate a session handoff note for this conversation:\n\n${context}`;
+  } else if (summaryMode) {
     userMessage = `Generate a session summary for this conversation:\n\n${context}`;
   } else if (mode === 'live') {
     const moodStr = moods && moods.length ? moods.join(', ') : 'not specified';

@@ -18,6 +18,8 @@ let currentUser = null;
 let currentMode = localStorage.getItem('bu_mode') || 'checkin';
 let entries = [];
 let pollInterval = null;
+let inactivityTimer = null;
+const INACTIVITY_MS = 5 * 60 * 1000; // 5 minutes
 
 // ---- Init ----
 document.addEventListener('DOMContentLoaded', () => {
@@ -59,6 +61,7 @@ function bindEvents() {
   });
 
   // Session
+  document.getElementById('end-session-btn').addEventListener('click', endSession);
   document.getElementById('session-submit').addEventListener('click', submitSessionMessage);
   document.getElementById('session-text').addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -141,6 +144,7 @@ function switchTab(tab) {
     startPolling();
   } else {
     stopPolling();
+    stopInactivityTimer();
   }
 }
 
@@ -228,7 +232,30 @@ function renderSession() {
 
   chatArea.innerHTML = '';
 
-  const visible = entries.filter(e => e.type !== 'summary');
+  // Show last session note as context card if it exists
+  const lastNote = [...entries].reverse().find(e => e.type === 'session-note');
+  if (lastNote) {
+    const card = document.createElement('div');
+    card.className = 'session-note-card';
+    const label = document.createElement('div');
+    label.className = 'session-note-label';
+    label.textContent = 'Last Session Note';
+    const text = document.createElement('div');
+    text.className = 'session-note-text';
+    text.textContent = lastNote.text;
+    const date = document.createElement('div');
+    date.className = 'session-note-date';
+    date.textContent = formatTime(lastNote.timestamp);
+    card.appendChild(label);
+    card.appendChild(text);
+    card.appendChild(date);
+    chatArea.appendChild(card);
+  }
+
+  const visible = entries.filter(e => e.type !== 'summary' && e.type !== 'session-note');
+
+  // Show End Session button only if there are messages
+  document.getElementById('end-session-btn').classList.toggle('hidden', visible.length === 0);
 
   if (!visible.length) {
     const empty = document.createElement('div');
@@ -295,13 +322,23 @@ async function submitSessionMessage() {
   feedback.className = 'feedback analyzing';
   feedback.textContent = 'Counselor is reading the thread...';
 
-  const context = entries
-    .filter(e => e.type !== 'summary')
+  // Token-efficient context: last session note + last 20 messages (not full history)
+  const lastNote = [...entries].reverse().find(e => e.type === 'session-note');
+  const recentMessages = entries
+    .filter(e => e.type !== 'summary' && e.type !== 'session-note')
+    .slice(-20)
     .map(e => {
       let line = `${e.user}: "${e.text.slice(0, 400)}"`;
       if (e.analysis) line += `\n[Counselor: ${e.analysis.slice(0, 200)}]`;
       return line;
     }).join('\n\n');
+
+  const context = lastNote
+    ? `Previous session note:\n${lastNote.text}\n\n---\n\nCurrent session:\n${recentMessages}`
+    : recentMessages;
+
+  // Reset inactivity timer since user is active
+  resetInactivityTimer();
 
   try {
     const res = await fetch('/api/analyze', {
@@ -338,6 +375,64 @@ async function submitSessionMessage() {
   } finally {
     btn.disabled = false;
   }
+}
+
+// ---- End Session ----
+async function endSession() {
+  const btn = document.getElementById('end-session-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  const sessionMessages = entries
+    .filter(e => e.type !== 'summary' && e.type !== 'session-note')
+    .map(e => {
+      let line = `${e.user}: "${e.text}"`;
+      if (e.analysis) line += `\n[Counselor: ${e.analysis}]`;
+      return line;
+    }).join('\n\n');
+
+  try {
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionNoteMode: true, context: sessionMessages, user: 'both', moods: [], mode: 'live' })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    const note = {
+      id: crypto.randomUUID(),
+      type: 'session-note',
+      user: 'both',
+      text: data.analysis,
+      timestamp: new Date().toISOString(),
+      replies: []
+    };
+
+    await saveEntry(note);
+    entries.push(note);
+    syncLocal();
+    renderSession();
+
+    btn.textContent = 'Session Saved';
+    setTimeout(() => {
+      btn.textContent = 'End Session';
+      btn.disabled = false;
+    }, 3000);
+
+  } catch (err) {
+    btn.textContent = 'End Session';
+    btn.disabled = false;
+    alert('Could not save session note: ' + err.message);
+  }
+}
+
+function resetInactivityTimer() {
+  // Placeholder — inactivity nudge removed per user preference
+}
+
+function stopInactivityTimer() {
+  if (inactivityTimer) { clearTimeout(inactivityTimer); inactivityTimer = null; }
 }
 
 // Auto-refresh the session every 10 seconds so both people see new messages
