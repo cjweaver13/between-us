@@ -391,11 +391,17 @@ async function endSession() {
       return line;
     }).join('\n\n');
 
+  // Include previous note so the new one rolls up all prior breakthroughs
+  const lastNote = [...entries].reverse().find(e => e.type === 'session-note');
+  const context = lastNote
+    ? `Accumulated notes from all prior sessions:\n${lastNote.text}\n\n---\n\nToday's session:\n${sessionMessages}`
+    : sessionMessages;
+
   try {
     const res = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionNoteMode: true, context: sessionMessages, user: 'both', moods: [], mode: 'live' })
+      body: JSON.stringify({ sessionNoteMode: true, context, user: 'both', moods: [], mode: 'live' })
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error);

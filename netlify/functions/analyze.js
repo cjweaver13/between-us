@@ -32,18 +32,18 @@ Unresolved tensions: [2-3 sentences]
 For Collin to bring to therapy: [1 specific actionable thing]
 For Megan to bring to therapy: [1 specific actionable thing]`;
 
-const SESSION_NOTE_PROMPT = `You are wrapping up a couples counseling session between Collin and Megan. Generate a compact handoff note — not a summary for them to read together, but a clinical briefing so the next session can pick up without re-reading everything.
+const SESSION_NOTE_PROMPT = `You are wrapping up a couples counseling session between Collin and Megan. You may be given accumulated notes from prior sessions plus today's session. Generate a single updated handoff note that carries all meaningful breakthroughs and unresolved tensions forward — not just today's, but everything worth remembering across all sessions so far.
 
 Format exactly as:
 Date: [today's date]
-Worked through: [2-3 sentences, specific topics covered]
-Breakthroughs: [1-2 sentences, or "none clear yet"]
-Still unresolved: [1-2 sentences]
-For Collin before next session: [1 concrete reflection or action]
-For Megan before next session: [1 concrete reflection or action]
-Start next session with: [one specific question or topic to open with]
+Ongoing patterns: [2-3 sentences — recurring themes across all sessions, updated with today]
+Breakthroughs to date: [running list of real shifts, most recent first, dropped when no longer relevant]
+Still unresolved: [what keeps coming up without resolution]
+For Collin before next session: [1 concrete reflection or action based on full picture]
+For Megan before next session: [1 concrete reflection or action based on full picture]
+Start next session with: [one specific question that picks up the most important thread]
 
-Be concrete and specific. Under 200 words. This is a clinical handoff, not encouragement.`;
+Be concrete. Under 250 words. This note replaces all prior notes — make it complete enough to stand alone.`;
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
