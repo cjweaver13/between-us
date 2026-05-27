@@ -8,14 +8,8 @@ const PROMPTS = [
   'What would help me right now...'
 ];
 
-const MODE_DESC = {
-  checkin: 'AI responds to your entry on its own — like a private check-in.',
-  live: 'AI reads the full thread and responds as a counselor to the ongoing dialogue.'
-};
-
 // ---- State ----
 let currentUser = null;
-let currentMode = localStorage.getItem('bu_mode') || 'checkin';
 let entries = [];
 let pollInterval = null;
 let inactivityTimer = null;
@@ -28,7 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   buildMoodChips();
   buildPromptChips();
-  applyMode(currentMode);
   bindEvents();
 });
 
@@ -52,14 +45,6 @@ function bindEvents() {
   document.getElementById('submit-btn').addEventListener('click', submitEntry);
   document.getElementById('summary-btn').addEventListener('click', generateSessionSummary);
 
-  document.querySelectorAll('.mode-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      currentMode = btn.dataset.mode;
-      localStorage.setItem('bu_mode', currentMode);
-      applyMode(currentMode);
-    });
-  });
-
   // Session
   document.getElementById('end-session-btn').addEventListener('click', endSession);
   document.getElementById('session-submit').addEventListener('click', submitSessionMessage);
@@ -76,12 +61,7 @@ function bindEvents() {
   });
 }
 
-function applyMode(mode) {
-  document.querySelectorAll('.mode-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.mode === mode);
-  });
-  document.getElementById('mode-desc').textContent = MODE_DESC[mode];
-}
+
 
 function setUser(name) {
   currentUser = name;
@@ -164,26 +144,17 @@ async function submitEntry() {
   btn.disabled = true;
   analysisDiv.classList.add('hidden');
   feedback.className = 'feedback analyzing';
-  feedback.textContent = currentMode === 'live' ? 'Counselor is reading the full thread...' : 'Analyzing your entry...';
+  feedback.textContent = 'Analyzing your entry...';
 
-  let context;
-  if (currentMode === 'live') {
-    context = entries.map(e => {
-      let line = `${e.user}: "${e.text.slice(0, 400)}"`;
-      if (e.analysis) line += `\n[Counselor: ${e.analysis.slice(0, 200)}]`;
-      return line;
-    }).join('\n\n');
-  } else {
-    context = entries.slice(-6).map(e =>
-      `${e.user} (${e.moods.join(', ') || 'no mood'}): ${e.text.slice(0, 200)}`
-    ).join('\n');
-  }
+  const context = entries.slice(-6).map(e =>
+    `${e.user} (${e.moods.join(', ') || 'no mood'}): ${e.text.slice(0, 200)}`
+  ).join('\n');
 
   try {
     const res = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ entry: text, user: currentUser, moods: selectedMoods, context, mode: currentMode })
+      body: JSON.stringify({ entry: text, user: currentUser, moods: selectedMoods, context, mode: 'checkin' })
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
@@ -196,7 +167,7 @@ async function submitEntry() {
       moods: selectedMoods,
       analysis: data.analysis,
       timestamp: new Date().toISOString(),
-      mode: currentMode,
+      mode: 'checkin',
       replies: []
     };
 
