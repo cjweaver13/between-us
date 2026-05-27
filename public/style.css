@@ -247,13 +247,29 @@ textarea#entry-text:focus {
   border-radius: var(--radius);
   padding: 14px 16px;
 }
+.write-analysis-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.write-analysis-delete {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.6;
+}
+.write-analysis-delete:hover { opacity: 1; color: #f08080; }
+
 .write-analysis-label {
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.6px;
   color: var(--ai-light);
-  margin-bottom: 8px;
 }
 .write-analysis-text {
   font-size: 13px;

@@ -22,7 +22,7 @@ exports.handler = async (event) => {
       moods: row.moods || [],
       analysis: row.analysis,
       timestamp: row.created_at,
-      type: row.entry_type === 'summary' ? 'summary' : undefined,
+      type: row.entry_type !== 'entry' ? row.entry_type : undefined,
       mode: row.mode || 'checkin',
       replies: row.replies || []
     }));
@@ -36,6 +36,12 @@ exports.handler = async (event) => {
 
   if (event.httpMethod === 'POST') {
     const body = JSON.parse(event.body);
+
+    if (body.action === 'delete') {
+      const { error } = await supabase.from('entries').delete().eq('id', body.id);
+      if (error) return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
+      return { statusCode: 200, body: JSON.stringify({ success: true }) };
+    }
 
     if (body.action === 'reply') {
       const { entryId, reply } = body;
@@ -60,7 +66,7 @@ exports.handler = async (event) => {
       text: body.text,
       moods: body.moods || [],
       analysis: body.analysis || null,
-      entry_type: body.type === 'summary' ? 'summary' : 'entry',
+      entry_type: ['summary', 'session-note', 'checkin'].includes(body.type) ? body.type : 'entry',
       mode: body.mode || 'checkin',
       replies: body.replies || []
     });

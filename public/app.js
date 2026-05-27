@@ -181,12 +181,29 @@ async function submitEntry() {
     const label = document.createElement('div');
     label.className = 'write-analysis-label';
     label.textContent = 'Analysis';
-    const body = document.createElement('div');
-    body.className = 'write-analysis-text';
-    body.textContent = data.analysis;
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'write-analysis-delete';
+    deleteBtn.textContent = 'Delete entry';
+    deleteBtn.addEventListener('click', async () => {
+      await fetch('/api/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', id: entry.id })
+      });
+      entries = entries.filter(e => e.id !== entry.id);
+      syncLocal();
+      analysisDiv.classList.add('hidden');
+    });
+    const labelRow = document.createElement('div');
+    labelRow.className = 'write-analysis-label-row';
+    labelRow.appendChild(label);
+    labelRow.appendChild(deleteBtn);
+    const bodyEl = document.createElement('div');
+    bodyEl.className = 'write-analysis-text';
+    bodyEl.textContent = data.analysis;
     analysisDiv.innerHTML = '';
-    analysisDiv.appendChild(label);
-    analysisDiv.appendChild(body);
+    analysisDiv.appendChild(labelRow);
+    analysisDiv.appendChild(bodyEl);
     analysisDiv.classList.remove('hidden');
 
     feedback.className = 'feedback success';
