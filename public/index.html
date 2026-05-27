@@ -31,7 +31,6 @@
 
     <nav class="tabs">
       <button class="tab active" data-tab="write">Write</button>
-      <button class="tab" data-tab="thread">Thread</button>
       <button class="tab" data-tab="session">Session</button>
     </nav>
 
@@ -57,22 +56,12 @@
       </section>
 
       <section class="write-section">
+        <p class="write-private-note">Private — only you see this. Use Session to share with each other.</p>
         <textarea id="entry-text" placeholder="Write freely here..."></textarea>
         <button id="submit-btn" class="submit-btn">Submit &amp; Analyze</button>
         <div id="write-feedback" class="feedback hidden"></div>
+        <div id="write-analysis" class="write-analysis-card hidden"></div>
       </section>
-    </div>
-
-    <!-- Thread tab -->
-    <div id="thread-tab" class="tab-content hidden">
-      <div class="thread-toolbar">
-        <button id="summary-btn" class="summary-btn hidden">Generate Session Summary</button>
-        <div id="thread-loading" class="loading hidden">Loading thread...</div>
-      </div>
-      <div id="thread-list"></div>
-      <div id="empty-thread" class="empty-state hidden">
-        <p>No entries yet. Go write something.</p>
-      </div>
     </div>
 
     <!-- Session tab -->
@@ -80,6 +69,7 @@
       <div class="session-banner">
         <span class="session-title">Live Counseling Session</span>
         <span class="session-live-dot">&#9679; Live</span>
+        <button id="summary-btn" class="summary-btn hidden">Summary</button>
         <button id="end-session-btn" class="end-session-btn hidden">End Session</button>
       </div>
 <div id="chat-area" class="chat-area"></div>

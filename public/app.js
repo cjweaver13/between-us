@@ -50,7 +50,7 @@ function bindEvents() {
   });
 
   document.getElementById('submit-btn').addEventListener('click', submitEntry);
-  document.getElementById('summary-btn').addEventListener('click', generateSummary);
+  document.getElementById('summary-btn').addEventListener('click', generateSessionSummary);
 
   document.querySelectorAll('.mode-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -99,7 +99,14 @@ function setUser(name) {
   document.getElementById('session-speaking-as').innerHTML =
     `Speaking as: <strong class="${name.toLowerCase()}">${name}</strong> &nbsp;·&nbsp; Shift+Enter for new line`;
 
-  loadThread();
+  // Pre-load entries from server in background
+  fetch('/api/data').then(r => r.json()).then(d => {
+    entries = d.entries || [];
+    syncLocal();
+  }).catch(() => {
+    const local = localStorage.getItem('bu_entries');
+    entries = local ? JSON.parse(local) : [];
+  });
 }
 
 // ---- Chips ----
@@ -134,10 +141,7 @@ function buildPromptChips() {
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   document.getElementById('write-tab').classList.toggle('hidden', tab !== 'write');
-  document.getElementById('thread-tab').classList.toggle('hidden', tab !== 'thread');
   document.getElementById('session-tab').classList.toggle('hidden', tab !== 'session');
-
-  if (tab === 'thread') loadThread();
 
   if (tab === 'session') {
     loadAndRenderSession();
@@ -155,8 +159,10 @@ async function submitEntry() {
 
   const selectedMoods = [...document.querySelectorAll('#mood-chips .chip.selected')].map(c => c.textContent);
   const feedback = document.getElementById('write-feedback');
+  const analysisDiv = document.getElementById('write-analysis');
   const btn = document.getElementById('submit-btn');
   btn.disabled = true;
+  analysisDiv.classList.add('hidden');
   feedback.className = 'feedback analyzing';
   feedback.textContent = currentMode === 'live' ? 'Counselor is reading the full thread...' : 'Analyzing your entry...';
 
@@ -184,6 +190,7 @@ async function submitEntry() {
 
     const entry = {
       id: crypto.randomUUID(),
+      type: 'checkin',
       user: currentUser,
       text,
       moods: selectedMoods,
@@ -200,8 +207,19 @@ async function submitEntry() {
     document.getElementById('entry-text').value = '';
     document.querySelectorAll('#mood-chips .chip.selected').forEach(c => c.classList.remove('selected'));
 
+    const label = document.createElement('div');
+    label.className = 'write-analysis-label';
+    label.textContent = 'Analysis';
+    const body = document.createElement('div');
+    body.className = 'write-analysis-text';
+    body.textContent = data.analysis;
+    analysisDiv.innerHTML = '';
+    analysisDiv.appendChild(label);
+    analysisDiv.appendChild(body);
+    analysisDiv.classList.remove('hidden');
+
     feedback.className = 'feedback success';
-    feedback.textContent = 'Saved. Check the Thread tab.';
+    feedback.textContent = 'Saved privately.';
     setTimeout(() => feedback.classList.add('hidden'), 3000);
 
   } catch (err) {
@@ -252,10 +270,11 @@ function renderSession() {
     chatArea.appendChild(card);
   }
 
-  const visible = entries.filter(e => e.type !== 'summary' && e.type !== 'session-note');
+  const visible = entries.filter(e => e.type !== 'summary' && e.type !== 'session-note' && e.type !== 'checkin');
 
-  // Show End Session button only if there are messages
+  // Show End Session and Summary buttons only if there are messages
   document.getElementById('end-session-btn').classList.toggle('hidden', visible.length === 0);
+  document.getElementById('summary-btn').classList.toggle('hidden', visible.length < 2);
 
   if (!visible.length) {
     const empty = document.createElement('div');
@@ -462,196 +481,20 @@ function stopPolling() {
   if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
 }
 
-// ---- Thread Tab ----
-async function loadThread() {
-  const loading = document.getElementById('thread-loading');
-  loading.classList.remove('hidden');
-
-  try {
-    const res = await fetch('/api/data');
-    const data = await res.json();
-    entries = data.entries || [];
-    syncLocal();
-  } catch (_) {
-    const local = localStorage.getItem('bu_entries');
-    entries = local ? JSON.parse(local) : [];
-  }
-
-  loading.classList.add('hidden');
-  renderThread();
-}
-
 function syncLocal() {
   localStorage.setItem('bu_entries', JSON.stringify(entries));
 }
 
-function renderThread() {
-  const list = document.getElementById('thread-list');
-  const empty = document.getElementById('empty-thread');
-  const summaryBtn = document.getElementById('summary-btn');
-
-  list.innerHTML = '';
-
-  if (!entries.length) {
-    empty.classList.remove('hidden');
-    summaryBtn.classList.add('hidden');
-    return;
-  }
-
-  empty.classList.add('hidden');
-  summaryBtn.classList.toggle('hidden', entries.length < 2);
-
-  entries.forEach(entry => list.appendChild(buildEntryCard(entry)));
-}
-
-function buildEntryCard(entry) {
-  const isSummary = entry.type === 'summary';
-  const card = document.createElement('div');
-  card.className = `entry-card ${isSummary ? 'summary' : entry.user.toLowerCase()}`;
-
-  const header = document.createElement('div');
-  header.className = 'entry-header';
-
-  const author = document.createElement('span');
-  author.className = 'entry-author';
-  author.textContent = isSummary ? 'Session Summary' : entry.user;
-
-  const time = document.createElement('span');
-  time.className = 'entry-time';
-  time.textContent = formatTime(entry.timestamp);
-
-  header.appendChild(author);
-  header.appendChild(time);
-
-  if (!isSummary && entry.mode === 'live') {
-    const badge = document.createElement('span');
-    badge.className = 'mode-badge';
-    badge.textContent = 'Live Thread';
-    header.appendChild(badge);
-  }
-
-  card.appendChild(header);
-
-  if (!isSummary && entry.moods && entry.moods.length) {
-    const moodRow = document.createElement('div');
-    moodRow.className = 'entry-moods';
-    entry.moods.forEach(m => {
-      const tag = document.createElement('span');
-      tag.className = 'mood-tag';
-      tag.textContent = m;
-      moodRow.appendChild(tag);
-    });
-    card.appendChild(moodRow);
-  }
-
-  const body = document.createElement('div');
-  body.className = isSummary ? 'summary-body' : 'entry-body';
-  body.textContent = entry.text;
-  card.appendChild(body);
-
-  if (!isSummary && entry.analysis) {
-    const analysisCard = document.createElement('div');
-    analysisCard.className = 'analysis-card';
-    const label = document.createElement('div');
-    label.className = 'analysis-label';
-    label.textContent = entry.mode === 'live' ? 'Counselor' : 'Analysis';
-    const text = document.createElement('div');
-    text.className = 'analysis-text';
-    text.textContent = entry.analysis;
-    analysisCard.appendChild(label);
-    analysisCard.appendChild(text);
-    card.appendChild(analysisCard);
-  }
-
-  if (!isSummary) {
-    const repliesEl = document.createElement('div');
-    repliesEl.className = 'replies';
-
-    if (entry.replies && entry.replies.length) {
-      entry.replies.forEach(r => repliesEl.appendChild(buildReplyItem(r)));
-    }
-
-    repliesEl.appendChild(buildReplyForm(entry.id, repliesEl));
-    card.appendChild(repliesEl);
-  }
-
-  return card;
-}
-
-function buildReplyItem(reply) {
-  const item = document.createElement('div');
-  item.className = 'reply-item';
-  const rAuthor = document.createElement('div');
-  rAuthor.className = 'reply-author ' + reply.user.toLowerCase();
-  rAuthor.textContent = reply.user;
-  const rText = document.createElement('div');
-  rText.className = 'reply-text';
-  rText.textContent = reply.text;
-  item.appendChild(rAuthor);
-  item.appendChild(rText);
-  return item;
-}
-
-function buildReplyForm(entryId, repliesEl) {
-  const form = document.createElement('div');
-  form.className = 'reply-form';
-
-  const input = document.createElement('textarea');
-  input.className = 'reply-input';
-  input.placeholder = 'Add a reply...';
-  input.rows = 1;
-  input.addEventListener('input', () => {
-    input.style.height = 'auto';
-    input.style.height = input.scrollHeight + 'px';
-  });
-
-  const btn = document.createElement('button');
-  btn.className = 'reply-submit';
-  btn.textContent = 'Reply';
-  btn.addEventListener('click', () => postReply(entryId, input, repliesEl, btn, form));
-
-  form.appendChild(input);
-  form.appendChild(btn);
-  return form;
-}
-
-async function postReply(entryId, input, repliesEl, btn, form) {
-  const text = input.value.trim();
-  if (!text) return;
-
-  btn.disabled = true;
-  const reply = { id: crypto.randomUUID(), user: currentUser, text, timestamp: new Date().toISOString() };
-
-  const entry = entries.find(e => e.id === entryId);
-  if (entry) {
-    if (!entry.replies) entry.replies = [];
-    entry.replies.push(reply);
-    syncLocal();
-  }
-
-  try {
-    await fetch('/api/data', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'reply', entryId, reply })
-    });
-  } catch (_) {}
-
-  repliesEl.insertBefore(buildReplyItem(reply), form);
-  input.value = '';
-  input.style.height = 'auto';
-  btn.disabled = false;
-}
-
 // ---- Summary ----
-async function generateSummary() {
+async function generateSessionSummary() {
   const btn = document.getElementById('summary-btn');
   btn.disabled = true;
   btn.textContent = 'Generating...';
 
-  const context = entries.map(e =>
-    `${e.user}: ${e.text.slice(0, 300)}${e.analysis ? '\n[Analysis: ' + e.analysis.slice(0, 200) + ']' : ''}`
-  ).join('\n\n---\n\n');
+  const context = entries
+    .filter(e => e.type !== 'checkin')
+    .map(e => `${e.user}: ${e.text.slice(0, 300)}${e.analysis ? '\n[Analysis: ' + e.analysis.slice(0, 200) + ']' : ''}`)
+    .join('\n\n---\n\n');
 
   try {
     const res = await fetch('/api/analyze', {
@@ -672,12 +515,12 @@ async function generateSummary() {
     await saveEntry(summary);
     entries.push(summary);
     syncLocal();
-    renderThread();
+    renderSession();
   } catch (err) {
     alert('Summary failed: ' + err.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Generate Session Summary';
+    btn.textContent = 'Summary';
   }
 }
 
