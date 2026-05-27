@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Between Us</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- User selection screen -->
+  <div id="user-select" class="screen">
+    <div class="brand">
+      <div class="brand-logo">&#9679; &#9675;</div>
+      <h1>Between Us</h1>
+      <p class="brand-sub">A private space for the two of you.</p>
+    </div>
+    <div class="user-btns">
+      <button class="user-btn collin" data-user="Collin">Collin</button>
+      <button class="user-btn megan" data-user="Megan">Megan</button>
+    </div>
+  </div>
+
+  <!-- Main app -->
+  <div id="app" class="screen hidden">
+    <header>
+      <div class="header-brand">Between Us</div>
+      <div id="user-badge" class="user-badge"></div>
+      <button id="switch-user" class="switch-btn">Switch</button>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="write">Write</button>
+      <button class="tab" data-tab="thread">Thread</button>
+    </nav>
+
+    <!-- Write tab -->
+    <div id="write-tab" class="tab-content">
+      <section class="write-section">
+        <label class="section-label">Mode</label>
+        <div class="mode-toggle" id="mode-toggle">
+          <button class="mode-btn active" data-mode="checkin">Check-In</button>
+          <button class="mode-btn" data-mode="live">Live Thread</button>
+        </div>
+        <p class="mode-desc" id="mode-desc">AI responds to your entry on its own — like a private check-in.</p>
+      </section>
+
+      <section class="write-section">
+        <label class="section-label">How are you feeling?</label>
+        <div id="mood-chips" class="chip-row"></div>
+      </section>
+
+      <section class="write-section">
+        <label class="section-label">Need a starting point?</label>
+        <div id="prompt-chips" class="chip-row prompt-chips"></div>
+      </section>
+
+      <section class="write-section">
+        <textarea id="entry-text" placeholder="Write freely here..."></textarea>
+        <button id="submit-btn" class="submit-btn">Submit &amp; Analyze</button>
+        <div id="write-feedback" class="feedback hidden"></div>
+      </section>
+    </div>
+
+    <!-- Thread tab -->
+    <div id="thread-tab" class="tab-content hidden">
+      <div class="thread-toolbar">
+        <button id="summary-btn" class="summary-btn hidden">Generate Session Summary</button>
+        <div id="thread-loading" class="loading hidden">Loading thread...</div>
+      </div>
+      <div id="thread-list"></div>
+      <div id="empty-thread" class="empty-state hidden">
+        <p>No entries yet. Go write something.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
