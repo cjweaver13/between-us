@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Between Us — Getting Started</title>
+  <style>
+    :root {
+      --collin: #534AB7;
+      --megan: #D4537E;
+      --ai: #1D9E75;
+      --bg: #f9f9fb;
+      --card: #ffffff;
+      --border: #e4e4ec;
+      --text: #1a1a2e;
+      --muted: #666680;
+      --radius: 10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.65;
+      padding: 40px 20px 80px;
+    }
+
+    .page {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .header-logo {
+      font-size: 22px;
+      letter-spacing: 6px;
+      opacity: 0.35;
+      margin-bottom: 14px;
+    }
+    .header h1 {
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+    .header p {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    /* URL pill */
+    .url-pill {
+      display: inline-block;
+      margin-top: 18px;
+      background: var(--text);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 20px;
+      border-radius: 100px;
+      letter-spacing: 0.2px;
+      text-decoration: none;
+    }
+
+    /* Sections */
+    .section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      margin-bottom: 20px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .section h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      letter-spacing: -0.2px;
+    }
+
+    .section p {
+      color: #333348;
+      margin-bottom: 10px;
+    }
+    .section p:last-child { margin-bottom: 0; }
+
+    /* Steps */
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 4px;
+    }
+    .step {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--text);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .step-body strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .step-body span {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* Two-column features */
+    .features {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 4px;
+    }
+    @media (max-width: 500px) {
+      .features { grid-template-columns: 1fr; }
+    }
+    .feature {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 18px;
+    }
+    .feature-icon {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+    .feature strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .feature span {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .feature.write { border-top: 3px solid var(--megan); }
+    .feature.session { border-top: 3px solid var(--ai); }
+
+    /* Counselor rules */
+    .rules {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .rule {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .rule-icon {
+      font-size: 16px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .rule-text {
+      font-size: 14px;
+      color: #333348;
+    }
+    .rule-text strong { font-weight: 600; }
+
+    /* Context boxes */
+    .context-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 4px;
+    }
+    @media (max-width: 500px) {
+      .context-grid { grid-template-columns: 1fr; }
+    }
+    .context-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+    .context-box .name {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .context-box.collin .name { color: var(--collin); }
+    .context-box.megan .name { color: var(--megan); }
+    .context-box ul {
+      list-style: none;
+      font-size: 13px;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .context-box ul li::before { content: "· "; }
+
+    /* Privacy box */
+    .privacy-box {
+      background: rgba(29,158,117,0.06);
+      border: 1px solid rgba(29,158,117,0.25);
+      border-radius: 8px;
+      padding: 14px 18px;
+      font-size: 13px;
+      color: #1a5c48;
+      margin-top: 4px;
+      line-height: 1.6;
+    }
+
+    /* Tips */
+    .tips {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .tip {
+      font-size: 14px;
+      color: #333348;
+      padding-left: 18px;
+      position: relative;
+    }
+    .tip::before {
+      content: "→";
+      position: absolute;
+      left: 0;
+      color: var(--muted);
+      font-size: 12px;
+      top: 2px;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="header-logo">&#9679; &#9675;</div>
+    <h1>Between Us</h1>
+    <p>A private space with an AI counselor — just for the two of you.</p>
+    <a class="url-pill" href="https://between-us-cm.netlify.app" target="_blank">between-us-cm.netlify.app</a>
+  </div>
+
+  <!-- Getting Started -->
+  <div class="section">
+    <div class="section-label">Getting Started</div>
+    <h2>Three steps to begin</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Open the app</strong>
+          <span>Go to between-us-cm.netlify.app — no account, no password.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Tap your name</strong>
+          <span>Choose Collin or Megan. The app remembers you on that device.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Write or start a session</strong>
+          <span>Use Write to process privately first, or go straight to Session to talk together.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Two modes -->
+  <div class="section">
+    <div class="section-label">How It Works</div>
+    <h2>Two ways to use it</h2>
+    <div class="features">
+      <div class="feature write">
+        <div class="feature-icon">&#9998;</div>
+        <strong>Write — Private</strong>
+        <span>Write freely to process your own thoughts. The AI responds just to you. The other person never sees it. Use this before a session or whenever you need to work something out first.</span>
+      </div>
+      <div class="feature session">
+        <div class="feature-icon">&#9679;</div>
+        <strong>Session — Together</strong>
+        <span>A live back-and-forth between both of you. The AI reads the full conversation and responds as a counselor after every message. Works even if you're not online at the same time — messages stay and update every 10 seconds.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- How the counselor works -->
+  <div class="section">
+    <div class="section-label">The AI Counselor</div>
+    <h2>How it's programmed to respond</h2>
+    <div class="rules">
+      <div class="rule">
+        <div class="rule-icon">&#9679;</div>
+        <div class="rule-text"><strong>Completely neutral.</strong> It does not take sides. Both perspectives are treated as legitimate, even when they directly conflict.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-icon">&#9679;</div>
+        <div class="rule-text"><strong>Separates emotion from request.</strong> It reflects back what you're actually saying — the feeling underneath — before translating it into language the other person can hear without defensiveness.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-icon">&#9679;</div>
+        <div class="rule-text"><strong>Identifies spirals gently.</strong> If something looks like an RSD trigger or cognitive distortion, it names it — without framing it as an attack or taking a side.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-icon">&#9679;</div>
+        <div class="rule-text"><strong>Asks one honest question.</strong> After every message in a live session, it directs one specific question — by name — to move the conversation forward.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-icon">&#9679;</div>
+        <div class="rule-text"><strong>No filler. No affirmations.</strong> It's direct and treats you both as intelligent adults. You won't get "That's so valid!" — you'll get something actually useful.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-icon">&#9679;</div>
+        <div class="rule-text"><strong>Short responses.</strong> Live session responses are under 200 words. Private check-ins under 250. It doesn't ramble.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- What it knows -->
+  <div class="section">
+    <div class="section-label">Context</div>
+    <h2>What the counselor already knows about you both</h2>
+    <p style="margin-bottom: 14px;">The counselor is pre-loaded with context about each of you so it doesn't need to be explained from scratch every time.</p>
+    <div class="context-grid">
+      <div class="context-box collin">
+        <div class="name">Collin</div>
+        <ul>
+          <li>Introverted, analytical, systems-oriented</li>
+          <li>Values unstructured mental freedom and autonomy</li>
+          <li>Neurodivergent (ADHD)</li>
+        </ul>
+      </div>
+      <div class="context-box megan">
+        <div class="name">Megan</div>
+        <ul>
+          <li>Rejection sensitive dysphoria (RSD)</li>
+          <li>People-pleasing tendencies, anxiety</li>
+          <li>Finds purpose through external experiences and family connection</li>
+          <li>Neurodivergent (ADHD)</li>
+        </ul>
+      </div>
+    </div>
+    <p style="margin-top: 14px; font-size: 13px; color: var(--muted);">It also knows you have two rescue dogs with complex needs (Callie and Daisy) and factors that into context when relevant.</p>
+  </div>
+
+  <!-- What it's not -->
+  <div class="section">
+    <div class="section-label">Expectations</div>
+    <h2>What this is — and isn't</h2>
+    <div class="tips">
+      <div class="tip">This is a <strong>supplement</strong>, not a replacement for your actual therapist. Use it between sessions, not instead of them.</div>
+      <div class="tip">The AI doesn't remember previous conversations on its own — but when you use "End Session," it generates a handoff note that carries forward across sessions.</div>
+      <div class="tip">It can surface patterns and ask honest questions, but it can't make decisions for you or tell you what to do.</div>
+      <div class="tip">If something it says feels off or unfair, say so in the session. It will recalibrate.</div>
+      <div class="tip">It works best when you write honestly — not for the other person to read, but for yourself first.</div>
+    </div>
+  </div>
+
+  <!-- Privacy -->
+  <div class="section">
+    <div class="section-label">Privacy</div>
+    <h2>Who can see what</h2>
+    <div class="privacy-box">
+      Anything you write in the <strong>Write tab</strong> is private to you — Collin cannot see it, and it never appears in the shared session. Use it freely to process without filtering yourself.<br><br>
+      The <strong>Session tab</strong> is shared — both of you see everything in that thread. The AI counselor's responses are also visible to both.<br><br>
+      Data is stored securely. Only the two of you have access.
+    </div>
+  </div>
+
+  <!-- Tips -->
+  <div class="section">
+    <div class="section-label">Tips</div>
+    <h2>Getting the most out of it</h2>
+    <div class="tips">
+      <div class="tip">Use <strong>Write</strong> first when you're activated or mid-spiral — get the raw version out privately, then bring a cleaner version into Session.</div>
+      <div class="tip">Pick your mood chips honestly. They give the counselor useful context before it reads your entry.</div>
+      <div class="tip">In Session, let the counselor finish before responding. Read what it says — it often names something worth sitting with for a moment.</div>
+      <div class="tip">Use <strong>End Session</strong> when you're done. It generates a summary note the counselor will reference next time, so context builds over time.</div>
+      <div class="tip">You don't have to be in a conflict to use it. Check-ins when things are going well help build the record of what's working too.</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Between Us &nbsp;·&nbsp; Private &nbsp;·&nbsp; between-us-cm.netlify.app
+  </div>
+
+</div>
+</body>
+</html>
