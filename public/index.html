@@ -32,6 +32,7 @@
     <nav class="tabs">
       <button class="tab active" data-tab="write">Write</button>
       <button class="tab" data-tab="thread">Thread</button>
+      <button class="tab" data-tab="session">Session</button>
     </nav>
 
     <!-- Write tab -->
@@ -74,6 +75,23 @@
       </div>
     </div>
   </div>
+
+    <!-- Session tab -->
+    <div id="session-tab" class="tab-content session-tab hidden">
+      <div class="session-banner">
+        <span class="session-title">Live Counseling Session</span>
+        <span class="session-live-dot">&#9679; Live</span>
+      </div>
+      <div id="chat-area" class="chat-area"></div>
+      <div class="session-input-area">
+        <div id="session-speaking-as" class="session-speaking-as"></div>
+        <div class="session-input-row">
+          <textarea id="session-text" class="session-textarea" placeholder="Write your message to the session..." rows="2"></textarea>
+          <button id="session-submit" class="session-submit-btn">Send</button>
+        </div>
+        <div id="session-feedback" class="feedback hidden"></div>
+      </div>
+    </div>
 
   <script src="app.js"></script>
 </body>

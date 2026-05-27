@@ -17,6 +17,7 @@ const MODE_DESC = {
 let currentUser = null;
 let currentMode = localStorage.getItem('bu_mode') || 'checkin';
 let entries = [];
+let pollInterval = null;
 
 // ---- Init ----
 document.addEventListener('DOMContentLoaded', () => {
@@ -35,6 +36,7 @@ function bindEvents() {
   });
 
   document.getElementById('switch-user').addEventListener('click', () => {
+    stopPolling();
     localStorage.removeItem('bu_user');
     currentUser = null;
     document.getElementById('app').classList.add('hidden');
@@ -54,6 +56,20 @@ function bindEvents() {
       localStorage.setItem('bu_mode', currentMode);
       applyMode(currentMode);
     });
+  });
+
+  // Session
+  document.getElementById('session-submit').addEventListener('click', submitSessionMessage);
+  document.getElementById('session-text').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      submitSessionMessage();
+    }
+  });
+  document.getElementById('session-text').addEventListener('input', () => {
+    const ta = document.getElementById('session-text');
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
   });
 }
 
@@ -76,6 +92,9 @@ function setUser(name) {
   badge.className = 'user-badge ' + name.toLowerCase();
 
   document.getElementById('app').className = 'screen as-' + name.toLowerCase();
+
+  document.getElementById('session-speaking-as').innerHTML =
+    `Speaking as: <strong class="${name.toLowerCase()}">${name}</strong> &nbsp;·&nbsp; Shift+Enter for new line`;
 
   loadThread();
 }
@@ -113,33 +132,38 @@ function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   document.getElementById('write-tab').classList.toggle('hidden', tab !== 'write');
   document.getElementById('thread-tab').classList.toggle('hidden', tab !== 'thread');
+  document.getElementById('session-tab').classList.toggle('hidden', tab !== 'session');
+
   if (tab === 'thread') loadThread();
+
+  if (tab === 'session') {
+    loadAndRenderSession();
+    startPolling();
+  } else {
+    stopPolling();
+  }
 }
 
-// ---- Submit Entry ----
+// ---- Write Tab: Submit Entry ----
 async function submitEntry() {
   const text = document.getElementById('entry-text').value.trim();
   if (!text) return;
 
   const selectedMoods = [...document.querySelectorAll('#mood-chips .chip.selected')].map(c => c.textContent);
-
   const feedback = document.getElementById('write-feedback');
   const btn = document.getElementById('submit-btn');
   btn.disabled = true;
   feedback.className = 'feedback analyzing';
   feedback.textContent = currentMode === 'live' ? 'Counselor is reading the full thread...' : 'Analyzing your entry...';
 
-  // Build context based on mode
   let context;
   if (currentMode === 'live') {
-    // Full thread for live counseling — AI needs the whole conversation
     context = entries.map(e => {
       let line = `${e.user}: "${e.text.slice(0, 400)}"`;
       if (e.analysis) line += `\n[Counselor: ${e.analysis.slice(0, 200)}]`;
       return line;
     }).join('\n\n');
   } else {
-    // Recent context only for check-in mode
     context = entries.slice(-6).map(e =>
       `${e.user} (${e.moods.join(', ') || 'no mood'}): ${e.text.slice(0, 200)}`
     ).join('\n');
@@ -169,7 +193,6 @@ async function submitEntry() {
     entries.push(entry);
     syncLocal();
 
-    // Reset form
     document.getElementById('entry-text').value = '';
     document.querySelectorAll('#mood-chips .chip.selected').forEach(c => c.classList.remove('selected'));
 
@@ -185,19 +208,160 @@ async function submitEntry() {
   }
 }
 
-// ---- Data ----
-async function saveEntry(entry) {
+// ---- Session Tab ----
+async function loadAndRenderSession() {
   try {
-    await fetch('/api/data', {
+    const res = await fetch('/api/data');
+    const data = await res.json();
+    entries = data.entries || [];
+    syncLocal();
+  } catch (_) {
+    const local = localStorage.getItem('bu_entries');
+    entries = local ? JSON.parse(local) : [];
+  }
+  renderSession();
+}
+
+function renderSession() {
+  const chatArea = document.getElementById('chat-area');
+  const atBottom = chatArea.scrollHeight - chatArea.scrollTop - chatArea.clientHeight < 80;
+
+  chatArea.innerHTML = '';
+
+  const visible = entries.filter(e => e.type !== 'summary');
+
+  if (!visible.length) {
+    const empty = document.createElement('div');
+    empty.className = 'session-empty';
+    empty.textContent = 'Start the session by writing the first message below.';
+    chatArea.appendChild(empty);
+    return;
+  }
+
+  visible.forEach(entry => {
+    // User bubble
+    const row = document.createElement('div');
+    row.className = `bubble-row ${entry.user.toLowerCase()}`;
+
+    const meta = document.createElement('div');
+    meta.className = 'bubble-meta';
+    meta.textContent = `${entry.user} · ${formatTime(entry.timestamp)}`;
+
+    const bubble = document.createElement('div');
+    bubble.className = `bubble ${entry.user.toLowerCase()}`;
+    bubble.textContent = entry.text;
+
+    row.appendChild(meta);
+    row.appendChild(bubble);
+
+    if (entry.moods && entry.moods.length) {
+      const moodEl = document.createElement('div');
+      moodEl.className = 'bubble-mood-tag';
+      moodEl.textContent = entry.moods.join(' · ');
+      row.appendChild(moodEl);
+    }
+
+    chatArea.appendChild(row);
+
+    // Counselor response
+    if (entry.analysis) {
+      const aiRow = document.createElement('div');
+      aiRow.className = 'bubble-row ai-row';
+
+      const aiMeta = document.createElement('div');
+      aiMeta.className = 'bubble-meta';
+      aiMeta.textContent = 'Counselor';
+
+      const aiBubble = document.createElement('div');
+      aiBubble.className = 'bubble ai';
+      aiBubble.textContent = entry.analysis;
+
+      aiRow.appendChild(aiMeta);
+      aiRow.appendChild(aiBubble);
+      chatArea.appendChild(aiRow);
+    }
+  });
+
+  if (atBottom) chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+async function submitSessionMessage() {
+  const text = document.getElementById('session-text').value.trim();
+  if (!text) return;
+
+  const feedback = document.getElementById('session-feedback');
+  const btn = document.getElementById('session-submit');
+  btn.disabled = true;
+  feedback.className = 'feedback analyzing';
+  feedback.textContent = 'Counselor is reading the thread...';
+
+  const context = entries
+    .filter(e => e.type !== 'summary')
+    .map(e => {
+      let line = `${e.user}: "${e.text.slice(0, 400)}"`;
+      if (e.analysis) line += `\n[Counselor: ${e.analysis.slice(0, 200)}]`;
+      return line;
+    }).join('\n\n');
+
+  try {
+    const res = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'insert', ...entry })
+      body: JSON.stringify({ entry: text, user: currentUser, moods: [], context, mode: 'live' })
     });
-  } catch (_) {
-    // Server unavailable (Netlify without Supabase configured) — localStorage only
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    const entry = {
+      id: crypto.randomUUID(),
+      user: currentUser,
+      text,
+      moods: [],
+      analysis: data.analysis,
+      timestamp: new Date().toISOString(),
+      mode: 'live',
+      replies: []
+    };
+
+    await saveEntry(entry);
+    entries.push(entry);
+    syncLocal();
+
+    document.getElementById('session-text').value = '';
+    document.getElementById('session-text').style.height = 'auto';
+    feedback.classList.add('hidden');
+    renderSession();
+
+  } catch (err) {
+    feedback.className = 'feedback error';
+    feedback.textContent = err.message || 'Something went wrong.';
+  } finally {
+    btn.disabled = false;
   }
 }
 
+// Auto-refresh the session every 10 seconds so both people see new messages
+function startPolling() {
+  stopPolling();
+  pollInterval = setInterval(async () => {
+    try {
+      const res = await fetch('/api/data');
+      const data = await res.json();
+      const fresh = data.entries || [];
+      if (fresh.length !== entries.length) {
+        entries = fresh;
+        syncLocal();
+        renderSession();
+      }
+    } catch (_) {}
+  }, 10000);
+}
+
+function stopPolling() {
+  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+}
+
+// ---- Thread Tab ----
 async function loadThread() {
   const loading = document.getElementById('thread-loading');
   loading.classList.remove('hidden');
@@ -220,7 +384,6 @@ function syncLocal() {
   localStorage.setItem('bu_entries', JSON.stringify(entries));
 }
 
-// ---- Thread Render ----
 function renderThread() {
   const list = document.getElementById('thread-list');
   const empty = document.getElementById('empty-thread');
@@ -245,7 +408,6 @@ function buildEntryCard(entry) {
   const card = document.createElement('div');
   card.className = `entry-card ${isSummary ? 'summary' : entry.user.toLowerCase()}`;
 
-  // Header
   const header = document.createElement('div');
   header.className = 'entry-header';
 
@@ -260,7 +422,6 @@ function buildEntryCard(entry) {
   header.appendChild(author);
   header.appendChild(time);
 
-  // Live thread badge
   if (!isSummary && entry.mode === 'live') {
     const badge = document.createElement('span');
     badge.className = 'mode-badge';
@@ -270,7 +431,6 @@ function buildEntryCard(entry) {
 
   card.appendChild(header);
 
-  // Moods
   if (!isSummary && entry.moods && entry.moods.length) {
     const moodRow = document.createElement('div');
     moodRow.className = 'entry-moods';
@@ -283,13 +443,11 @@ function buildEntryCard(entry) {
     card.appendChild(moodRow);
   }
 
-  // Body
   const body = document.createElement('div');
   body.className = isSummary ? 'summary-body' : 'entry-body';
   body.textContent = entry.text;
   card.appendChild(body);
 
-  // AI Analysis
   if (!isSummary && entry.analysis) {
     const analysisCard = document.createElement('div');
     analysisCard.className = 'analysis-card';
@@ -304,19 +462,15 @@ function buildEntryCard(entry) {
     card.appendChild(analysisCard);
   }
 
-  // Replies
   if (!isSummary) {
     const repliesEl = document.createElement('div');
     repliesEl.className = 'replies';
 
     if (entry.replies && entry.replies.length) {
-      entry.replies.forEach(r => {
-        repliesEl.appendChild(buildReplyItem(r));
-      });
+      entry.replies.forEach(r => repliesEl.appendChild(buildReplyItem(r)));
     }
 
-    const form = buildReplyForm(entry.id, repliesEl);
-    repliesEl.appendChild(form);
+    repliesEl.appendChild(buildReplyForm(entry.id, repliesEl));
     card.appendChild(repliesEl);
   }
 
@@ -365,12 +519,7 @@ async function postReply(entryId, input, repliesEl, btn, form) {
   if (!text) return;
 
   btn.disabled = true;
-  const reply = {
-    id: crypto.randomUUID(),
-    user: currentUser,
-    text,
-    timestamp: new Date().toISOString()
-  };
+  const reply = { id: crypto.randomUUID(), user: currentUser, text, timestamp: new Date().toISOString() };
 
   const entry = entries.find(e => e.id === entryId);
   if (entry) {
@@ -387,9 +536,7 @@ async function postReply(entryId, input, repliesEl, btn, form) {
     });
   } catch (_) {}
 
-  const item = buildReplyItem(reply);
-  repliesEl.insertBefore(item, form);
-
+  repliesEl.insertBefore(buildReplyItem(reply), form);
   input.value = '';
   input.style.height = 'auto';
   btn.disabled = false;
@@ -431,6 +578,17 @@ async function generateSummary() {
     btn.disabled = false;
     btn.textContent = 'Generate Session Summary';
   }
+}
+
+// ---- Data ----
+async function saveEntry(entry) {
+  try {
+    await fetch('/api/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'insert', ...entry })
+    });
+  } catch (_) {}
 }
 
 // ---- Utils ----
